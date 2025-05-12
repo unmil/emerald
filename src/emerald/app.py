@@ -19,15 +19,6 @@ from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
 from emerald.queries import QUERIES
 
-#custom search credentials
-API_KEY="AIzaSyArYp6ybtzZyrHyXOK2tllZXox2JRA6rI4" # from GCP project -> credentials -> new API key
-CX="9524dadb08a904cab" # from programmablesearch.google.com
-
-#drive integration credentials
-SERVICE_ACCOUNT_FILE="emerald-gcp-service-key.json"
-SCOPES=["https://www.googleapis.com/auth/drive"]
-FOLDER_ID="1BebuFtSOBrJDUiElkMj0RSrb7kKPo3A8"
-
 class Emerald(toga.App):
     def startup(self):
         """Construct and show the Toga application.
