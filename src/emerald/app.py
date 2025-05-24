@@ -24,11 +24,13 @@ from .emeraldconfig import EmeraldConfig
 class Emerald(toga.App):
     def startup(self):
 
-        """ Read in the configuration file"""
+        """ Read the configuration file"""
 
         config_path = Path(self.app.paths.app) / "config/config.ini"
         self.config = EmeraldConfig(config_path)
-        print( self.config.sections())
+
+        """ Ensure that the config file has the necessary information"""
+        self.validate_config()
 
         self.API_KEY = self.config.get("GoogleAPI", "API_KEY")
         self.CX = self.config.get("GoogleAPI", "CX")
@@ -36,6 +38,7 @@ class Emerald(toga.App):
         self.FOLDER_ID = self.config.get("GoogleAPI", "FOLDER_ID")  
         self.SCOPES = self.config.get("GoogleAPI", "SCOPES").split(",")
         if __debug__:
+            print( self.config.sections())
             print(f"API_KEY: {self.API_KEY}")
             print(f"CX: {self.CX}")
             print(f"SERVICE_ACCOUNT_FILE: {self.SERVICE_ACCOUNT_FILE}")
@@ -105,15 +108,17 @@ class Emerald(toga.App):
  
 
     async def retrieve_google_results(self, widget):
-        query = random.choice(QUERIES)
-        query_id = QUERIES.index(query)  
+        print( "Query keys are: ", QUERIES.keys())
+        print( "Query values are: ", QUERIES.values())
+        selection = random.choice(list(QUERIES.keys()))
+        print( f"Randomly selected query: {selection}")
         await self.main_window.dialog(
-            toga.InfoDialog( "Starting search...", f"Getting results for query, {query}")
+            toga.InfoDialog( "Starting search...", f"Getting results for query, {QUERIES[selection]}")
         )
 
-        results = self.google_search(query)
+        results = self.google_search(QUERIES[selection])
         if results:
-            filename = self.save_to_csv(query_id, results)
+            filename = self.save_to_csv(selection, results)
             self.upload_to_drive(filename)
             toga.InfoDialog(
                 f"Results saved and uploaded.",
@@ -125,6 +130,14 @@ class Emerald(toga.App):
                 "Uh oh...",
             )
 
+    """ validation checks:
+    1. Check if the API_KEY and CX are set in the config file.
+    2. Check if the SERVICE_ACCOUNT_FILE is set in the config file.
+    3. Check if the FOLDER_ID is set in the config file.
+    4. Check if the SCOPES are set in the config file.
+    5. check if the user id is set"""
+    def validate_config(self):
+        print(f"Performing Google search for query: {query}")
 
     def google_search(self, query):
         print(f"Performing Google search for query: {query}")
