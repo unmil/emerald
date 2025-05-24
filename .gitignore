@@ -1,6 +1,7 @@
 #app config files
 src/emerald/config/*.json
-src/emerald/config/config.ini # the template file is tracked
+src/emerald/config/config.ini 
+# the config-template file is tracked
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

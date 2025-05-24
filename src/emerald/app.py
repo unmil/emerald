@@ -17,19 +17,31 @@ from googleapiclient.errors import HttpError
 from google.oauth2 import service_account
 from googleapiclient.discovery import build
 from googleapiclient.http import MediaFileUpload
-from emerald.queries import QUERIES
+from emerald.config.queries import QUERIES
+from .emeraldconfig import EmeraldConfig
 
-#custom search credentials
-API_KEY="AIzaSyArYp6ybtzZyrHyXOK2tllZXox2JRA6rI4" # from GCP project -> credentials -> new API key
-CX="9524dadb08a904cab" # from programmablesearch.google.com
-
-#drive integration credentials
-SERVICE_ACCOUNT_FILE="emerald-gcp-service-key.json"
-SCOPES=["https://www.googleapis.com/auth/drive"]
-FOLDER_ID="1BebuFtSOBrJDUiElkMj0RSrb7kKPo3A8"
 
 class Emerald(toga.App):
     def startup(self):
+
+        """ Read in the configuration file"""
+
+        config_path = Path(self.app.paths.app) / "config/config.ini"
+        self.config = EmeraldConfig(config_path)
+        print( self.config.sections())
+
+        self.API_KEY = self.config.get("GoogleAPI", "API_KEY")
+        self.CX = self.config.get("GoogleAPI", "CX")
+        self.SERVICE_ACCOUNT_FILE = self.config.get("GoogleAPI", "SERVICE_ACCOUNT_FILE")
+        self.FOLDER_ID = self.config.get("GoogleAPI", "FOLDER_ID")  
+        self.SCOPES = self.config.get("GoogleAPI", "SCOPES").split(",")
+        if __debug__:
+            print(f"API_KEY: {self.API_KEY}")
+            print(f"CX: {self.CX}")
+            print(f"SERVICE_ACCOUNT_FILE: {self.SERVICE_ACCOUNT_FILE}")
+            print(f"FOLDER_ID: {self.FOLDER_ID}")
+            print(f"SCOPES: {self.SCOPES}")
+    
         """Construct and show the Toga application.
 
         Usually, you would add your application to a main content box.
@@ -40,37 +52,37 @@ class Emerald(toga.App):
 
         app_label = toga.Label(
             f"App: {self.app.paths.app}",
-            style=Pack(padding=(0, 5)),
+            style=Pack(margin=(0, 5)),
         )
         main_box.add(app_label)
 
         cache_label = toga.Label(
             f"Cache: {self.app.paths.cache}",
-            style=Pack(padding=(0, 5)),
+            style=Pack(margin=(0, 5)),
         )
         main_box.add(cache_label)
 
         config_label = toga.Label(
             f"Config: {self.app.paths.config}",
-            style=Pack(padding=(0, 5)),
+            style=Pack(margin=(0, 5)),
         )
         main_box.add(config_label)
 
         data_label = toga.Label(
             f"Data: {self.app.paths.data}",
-            style=Pack(padding=(0, 5)),
+            style=Pack(margin=(0, 5)),
         )
         main_box.add(data_label)
 
         log_label = toga.Label(
             f"Cache: {self.app.paths.logs}",
-            style=Pack(padding=(0, 5)),
+            style=Pack(margin=(0, 5)),
         )
         main_box.add(log_label)
 
         toga_label = toga.Label(
             f"Config: {self.app.paths.toga}",
-            style=Pack(padding=(0, 5)),
+            style=Pack(margin=(0, 5)),
         )
         main_box.add(toga_label)
 
@@ -117,7 +129,14 @@ class Emerald(toga.App):
     def google_search(self, query):
         print(f"Performing Google search for query: {query}")
         encoded_query = urllib.parse.quote(query)  
-        url = f"https://www.googleapis.com/customsearch/v1?q={encoded_query}&key={API_KEY}&cx={CX}"
+        url = f"https://www.googleapis.com/customsearch/v1?q={encoded_query}&key={self.API_KEY}&cx={self.CX}"
+
+        if __debug__:
+            print(f"Google search URL: {url}")
+            print(f"API_KEY: {self.API_KEY}")
+            print(f"CX: {self.CX}")    
+            print( f"Encoded query: {encoded_query}")
+
         response = requests.get(url)
         if response.status_code == 200:
             print("Search successful. Parsing results...")
@@ -150,7 +169,7 @@ class Emerald(toga.App):
     def upload_to_drive(self, filename):
         print(f"Attempting to upload {filename} to Google Drive...")
         try:
-            service_file_path = Path(self.app.paths.app) / SERVICE_ACCOUNT_FILE
+            service_file_path = Path(self.app.paths.app) / "config" / self.SERVICE_ACCOUNT_FILE
             print( f"Service account file path original: {service_file_path}")
             print( f"Service account file path as posix: {service_file_path.as_posix()}")
 
@@ -158,7 +177,7 @@ class Emerald(toga.App):
                 print(f"Service account file not found: {service_file_path}")
                 return
             credentials = service_account.Credentials.from_service_account_file(
-                service_file_path, scopes=SCOPES
+                service_file_path, scopes=self.SCOPES
             )
             print("Service account credentials loaded successfully.")
 
@@ -166,7 +185,7 @@ class Emerald(toga.App):
             print("Google Drive service built successfully.")
 
             posix_filepath = (Path(self.app.paths.cache) / filename).as_posix()
-            file_metadata = {"name": filename, "parents": [FOLDER_ID]}
+            file_metadata = {"name": filename, "parents": [self.FOLDER_ID]}
             media = MediaFileUpload(posix_filepath, mimetype="text/csv")
             print(f"Uploading file: {posix_filepath}")
 
